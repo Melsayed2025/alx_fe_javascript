@@ -6,46 +6,16 @@ let quotes = JSON.parse(localStorage.getItem('quotes')) || [
 
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteButton = document.getElementById('newQuote');
+const categoryFilter = document.getElementById('categoryFilter');
+const addQuoteButton = document.getElementById('addQuote');
+const exportButton = document.getElementById('exportBtn');
+const importInput = document.getElementById('importFile');
 
 function showRandomQuote() {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const quote = quotes[randomIndex];
   quoteDisplay.innerHTML = `<p>"${quote.text}"</p><small>(${quote.category})</small>`;
   sessionStorage.setItem('lastQuote', JSON.stringify(quote));
-}
-
-function createAddQuoteForm() {
-  const formDiv = document.createElement('div');
-
-  const textInput = document.createElement('input');
-  textInput.id = 'newQuoteText';
-  textInput.placeholder = 'Enter a new quote';
-
-  const categoryInput = document.createElement('input');
-  categoryInput.id = 'newQuoteCategory';
-  categoryInput.placeholder = 'Enter quote category';
-
-  const addButton = document.createElement('button');
-  addButton.textContent = 'Add Quote';
-  addButton.addEventListener('click', addQuote);
-
-  const exportButton = document.createElement('button');
-  exportButton.textContent = 'Export Quotes';
-  exportButton.addEventListener('click', exportToJsonFile);
-
-  const importInput = document.createElement('input');
-  importInput.type = 'file';
-  importInput.id = 'importFile';
-  importInput.accept = '.json';
-  importInput.addEventListener('change', importFromJsonFile);
-
-  formDiv.appendChild(textInput);
-  formDiv.appendChild(categoryInput);
-  formDiv.appendChild(addButton);
-  formDiv.appendChild(exportButton);
-  formDiv.appendChild(importInput);
-
-  document.body.appendChild(formDiv);
 }
 
 function addQuote() {
@@ -59,6 +29,7 @@ function addQuote() {
     };
     quotes.push(newQuote);
     saveQuotes();
+    populateCategories();
     textInput.value = '';
     categoryInput.value = '';
     alert('Quote added successfully!');
@@ -89,6 +60,7 @@ function importFromJsonFile(event) {
       if (Array.isArray(importedQuotes)) {
         quotes.push(...importedQuotes);
         saveQuotes();
+        populateCategories();
         alert('Quotes imported successfully!');
       } else {
         alert('Invalid JSON format!');
@@ -100,12 +72,49 @@ function importFromJsonFile(event) {
   fileReader.readAsText(event.target.files[0]);
 }
 
+function populateCategories() {
+  const categories = [...new Set(quotes.map(q => q.category))];
+  categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    option.textContent = cat;
+    categoryFilter.appendChild(option);
+  });
+
+  const savedFilter = localStorage.getItem('selectedCategory');
+  if (savedFilter) {
+    categoryFilter.value = savedFilter;
+    filterQuotes();
+  }
+}
+
+function filterQuotes() {
+  const selectedCategory = categoryFilter.value;
+  localStorage.setItem('selectedCategory', selectedCategory);
+  const filteredQuotes =
+    selectedCategory === 'all'
+      ? quotes
+      : quotes.filter(q => q.category === selectedCategory);
+
+  quoteDisplay.innerHTML = '';
+  filteredQuotes.forEach(q => {
+    const p = document.createElement('p');
+    p.innerHTML = `"${q.text}" <small>(${q.category})</small>`;
+    quoteDisplay.appendChild(p);
+  });
+}
+
 window.addEventListener('load', () => {
   const lastQuote = JSON.parse(sessionStorage.getItem('lastQuote'));
   if (lastQuote) {
     quoteDisplay.innerHTML = `<p>"${lastQuote.text}"</p><small>(${lastQuote.category})</small>`;
   }
+  populateCategories();
 });
 
 newQuoteButton.addEventListener('click', showRandomQuote);
-createAddQuoteForm();
+addQuoteButton.addEventListener('click', addQuote);
+exportButton.addEventListener('click', exportToJsonFile);
+importInput.addEventListener('change', importFromJsonFile);
+categoryFilter.addEventListener('change', filterQuotes);
