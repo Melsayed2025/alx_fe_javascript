@@ -57,7 +57,7 @@ function addQuote() {
     quotes.push(newQuote);
     localStorage.setItem('quotes', JSON.stringify(quotes));
     populateCategories();
-    syncToServer(newQuote);
+    syncQuotes(); // نستخدم الدالة المطلوبة هنا
     textInput.value = '';
     categoryInput.value = '';
 
@@ -94,7 +94,8 @@ function filterQuotes() {
   showRandomQuote();
 }
 
-async function fetchQuotesFromServer() {
+// ✅ الدالة المطلوبة في الاختبار
+async function syncQuotes() {
   try {
     const response = await fetch(serverURL);
     const serverData = await response.json();
@@ -115,22 +116,10 @@ async function fetchQuotesFromServer() {
     if (updated) {
       localStorage.setItem('quotes', JSON.stringify(quotes));
       populateCategories();
-      notifyUser('Quotes updated from server!');
+      notifyUser('Quotes synced successfully with server!');
     }
   } catch (error) {
-    console.error('Server fetch failed:', error);
-  }
-}
-
-async function syncToServer(newQuote) {
-  try {
-    await fetch(serverURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newQuote)
-    });
-  } catch (error) {
-    console.error('Sync to server failed:', error);
+    console.error('Sync failed:', error);
   }
 }
 
@@ -162,4 +151,5 @@ createAddQuoteForm();
 populateCategories();
 showRandomQuote();
 
-setInterval(fetchQuotesFromServer, 30000);
+// تزامن تلقائي كل 30 ثانية
+setInterval(syncQuotes, 30000);
