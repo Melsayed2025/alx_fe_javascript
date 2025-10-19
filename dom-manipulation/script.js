@@ -113,6 +113,16 @@ async function fetchQuotesFromServer() {
 
 async function syncQuotes() {
   await fetchQuotesFromServer();
+  try {
+    await fetch(serverURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quotes)
+    });
+    notifyUser("Quotes synced with server successfully!");
+  } catch (error) {
+    console.error("Error syncing quotes:", error);
+  }
 }
 
 function notifyUser(message) {
