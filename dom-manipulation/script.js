@@ -9,6 +9,7 @@ let quotes = JSON.parse(localStorage.getItem('quotes')) || [
 const quoteDisplay = document.getElementById('quoteDisplay');
 const newQuoteButton = document.getElementById('newQuote');
 const exportBtn = document.getElementById('exportQuotes');
+const syncBtn = document.getElementById('syncNow');
 const categoryFilter = document.getElementById('categoryFilter');
 
 function showRandomQuote() {
@@ -24,43 +25,35 @@ function showRandomQuote() {
 
 function createAddQuoteForm() {
   const formDiv = document.createElement('div');
-
   const textInput = document.createElement('input');
   textInput.id = 'newQuoteText';
   textInput.placeholder = 'Enter a new quote';
-
   const categoryInput = document.createElement('input');
   categoryInput.id = 'newQuoteCategory';
   categoryInput.placeholder = 'Enter quote category';
-
   const addButton = document.createElement('button');
   addButton.textContent = 'Add Quote';
   addButton.addEventListener('click', addQuote);
-
   formDiv.appendChild(textInput);
   formDiv.appendChild(categoryInput);
   formDiv.appendChild(addButton);
-
   document.body.appendChild(formDiv);
 }
 
 function addQuote() {
   const textInput = document.getElementById('newQuoteText');
   const categoryInput = document.getElementById('newQuoteCategory');
-
   if (textInput.value && categoryInput.value) {
     const newQuote = {
       text: textInput.value,
       category: categoryInput.value
     };
-
     quotes.push(newQuote);
     localStorage.setItem('quotes', JSON.stringify(quotes));
     populateCategories();
-    syncQuotes(); // نستخدم الدالة المطلوبة هنا
+    syncQuotes();
     textInput.value = '';
     categoryInput.value = '';
-
     alert('Quote added successfully!');
   } else {
     alert('Please enter both a quote and a category.');
@@ -76,7 +69,6 @@ function populateCategories() {
     option.textContent = cat;
     categoryFilter.appendChild(option);
   });
-
   const savedFilter = localStorage.getItem('selectedCategory');
   if (savedFilter) {
     categoryFilter.value = savedFilter;
@@ -94,17 +86,14 @@ function filterQuotes() {
   showRandomQuote();
 }
 
-// ✅ الدالة المطلوبة في الاختبار
-async function syncQuotes() {
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch(serverURL);
     const serverData = await response.json();
-
     const serverQuotes = serverData.slice(0, 3).map(item => ({
       text: item.title,
       category: "Server"
     }));
-
     let updated = false;
     serverQuotes.forEach(sq => {
       if (!quotes.some(q => q.text === sq.text)) {
@@ -112,15 +101,18 @@ async function syncQuotes() {
         updated = true;
       }
     });
-
     if (updated) {
       localStorage.setItem('quotes', JSON.stringify(quotes));
       populateCategories();
-      notifyUser('Quotes synced successfully with server!');
+      notifyUser('Quotes updated from server!');
     }
   } catch (error) {
-    console.error('Sync failed:', error);
+    console.error('Error fetching quotes:', error);
   }
+}
+
+async function syncQuotes() {
+  await fetchQuotesFromServer();
 }
 
 function notifyUser(message) {
@@ -146,10 +138,9 @@ function exportQuotes() {
 
 newQuoteButton.addEventListener('click', showRandomQuote);
 exportBtn.addEventListener('click', exportQuotes);
+syncBtn.addEventListener('click', syncQuotes);
 
 createAddQuoteForm();
 populateCategories();
 showRandomQuote();
-
-// تزامن تلقائي كل 30 ثانية
 setInterval(syncQuotes, 30000);
